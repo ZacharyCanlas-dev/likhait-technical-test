@@ -165,4 +165,71 @@ RSpec.describe "Api::Expenses", type: :request do
       end
     end
   end
+
+  describe "GET /api/expenses parameter handling" do
+    let!(:expense) { Expense.create!(description: "Lunch", amount: 10.00, category: food_category, date: Date.new(2026, 2, 5)) }
+
+    it "rejects a month outside 1..12" do
+      get "/api/expenses", params: { year: 2026, month: 13 }
+
+      expect(response).to have_http_status(:bad_request)
+      expect(JSON.parse(response.body)["errors"]).to be_present
+    end
+
+    it "rejects a zero month" do
+      get "/api/expenses", params: { year: 2026, month: 0 }
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "rejects a non-numeric year" do
+      get "/api/expenses", params: { year: "abc", month: "xyz" }
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "rejects a numeric prefix that to_i would have accepted" do
+      get "/api/expenses", params: { year: 2026, month: "13abc" }
+
+      expect(response).to have_http_status(:bad_request)
+    end
+
+    it "accepts a far-future year and returns no expenses" do
+      get "/api/expenses", params: { year: 9999, month: 2 }
+
+      expect(response).to have_http_status(:success)
+      expect(JSON.parse(response.body)).to be_empty
+    end
+  end
+
+  describe "GET /api/expenses paging" do
+    # Three dates so ordering is observable across pages.
+    let!(:expenses) do
+      [ 3, 2, 1 ].map do |day|
+        Expense.create!(description: "Expense #{day}", amount: 10.00,
+                        category: food_category, date: Date.new(2026, 2, day))
+      end
+    end
+
+    it "reports the unpaged total in X-Total-Count" do
+      get "/api/expenses", params: { limit: 1 }
+
+      expect(response.headers["X-Total-Count"]).to eq("3")
+      expect(JSON.parse(response.body).length).to eq(1)
+    end
+
+    it "walks the ordering with limit and offset" do
+      get "/api/expenses", params: { limit: 1, offset: 1 }
+
+      json = JSON.parse(response.body)
+      expect(json.map { |e| e["date"] }).to eq([ "2026-02-02" ])
+    end
+
+    it "caps a limit larger than the maximum page size" do
+      get "/api/expenses", params: { limit: 10_000 }
+
+      expect(response).to have_http_status(:success)
+      expect(JSON.parse(response.body).length).to eq(3)
+    end
+  end
 end

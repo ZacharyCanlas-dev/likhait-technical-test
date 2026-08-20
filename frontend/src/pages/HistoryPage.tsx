@@ -6,13 +6,33 @@ import { MonthNavigation } from "../components/MonthNavigation";
 import CategoryBreakdown from "../components/CategoryBreakdown";
 import { CalendarExpenseTable } from "../components/CalendarExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
+import { useCategories } from "../hooks/useCategories";
 import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
+
+function addExpenseBlockedReason(
+  isLoading: boolean,
+  error: string | null,
+  categoryCount: number,
+): string | undefined {
+  if (isLoading) return "Loading categories...";
+  if (error) return error;
+  if (categoryCount === 0) {
+    return "Add a category before recording an expense.";
+  }
+  return undefined;
+}
 
 const HistoryPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const {
+    categories: categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+    reload: reloadCategories,
+  } = useCategories();
 
   // Get year and month from URL params, default to current date if not provided
   const getInitialYearMonth = () => {
@@ -87,7 +107,11 @@ const HistoryPage: React.FC = () => {
     (acc, expense) => {
       const category = expense.category || "Uncategorized";
       if (!acc[category]) {
-        acc[category] = { category, amount: 0, count: 0 };
+        acc[category] = {
+          category,
+          amount: 0,
+          count: 0,
+        };
       }
       acc[category].amount += Number(expense.amount);
       acc[category].count += 1;
@@ -96,11 +120,17 @@ const HistoryPage: React.FC = () => {
     {} as Record<string, { category: string; amount: number; count: number }>,
   );
 
-  const categories = Object.values(categoryData).sort(
+  const categoryTotals = Object.values(categoryData).sort(
     (a, b) => b.amount - a.amount,
   );
-  const total = categories.reduce((sum, cat) => sum + cat.amount, 0);
-  const totalCount = categories.reduce((sum, cat) => sum + cat.count, 0);
+  const total = categoryTotals.reduce((sum, cat) => sum + cat.amount, 0);
+  const totalCount = categoryTotals.reduce((sum, cat) => sum + cat.count, 0);
+
+  const blockedReason = addExpenseBlockedReason(
+    categoriesLoading,
+    categoriesError,
+    categories.length,
+  );
 
   const pageStyle: React.CSSProperties = {
     padding: "48px 64px",
@@ -120,6 +150,20 @@ const HistoryPage: React.FC = () => {
     alignItems: "center",
     gap: "24px",
   };
+
+  const bannerStyle = (isError: boolean): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "16px",
+    marginTop: "16px",
+    padding: "12px 16px",
+    borderRadius: "0.375rem",
+    border: `1px solid ${isError ? COLORS.red.re04 : COLORS.border}`,
+    backgroundColor: isError ? COLORS.red.re02 : COLORS.background.card,
+    color: isError ? COLORS.red.re07 : COLORS.text.secondary,
+    fontSize: "14px",
+  });
 
   const titleStyle: React.CSSProperties = {
     fontSize: "40px",
@@ -148,10 +192,28 @@ const HistoryPage: React.FC = () => {
             onYearChange={handleYearChange}
           />
         </div>
-        <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+        <Button
+          variant="primary"
+          onClick={() => setIsModalOpen(true)}
+          disabled={Boolean(blockedReason)}
+        >
           Add Expense
         </Button>
       </div>
+
+      {blockedReason && (
+        <div
+          style={bannerStyle(Boolean(categoriesError))}
+          role={categoriesError ? "alert" : undefined}
+        >
+          <span>{blockedReason}</span>
+          {categoriesError && (
+            <Button variant="secondary" size="small" onClick={reloadCategories}>
+              Retry
+            </Button>
+          )}
+        </div>
+      )}
 
       <MonthNavigation
         currentMonth={selectedMonth}
@@ -165,13 +227,14 @@ const HistoryPage: React.FC = () => {
         ) : (
           <>
             <CategoryBreakdown
-              categories={categories}
+              categories={categoryTotals}
               total={total}
               totalCount={totalCount}
             />
             <div style={{ marginTop: "32px" }}>
               <CalendarExpenseTable
                 expenses={expenses}
+                categories={categories}
                 onExpenseUpdated={fetchExpenses}
               />
             </div>
@@ -185,6 +248,7 @@ const HistoryPage: React.FC = () => {
         title="Add New Expense"
       >
         <ExpenseForm
+          categories={categories}
           onSubmit={handleAddExpense}
           onCancel={() => setIsModalOpen(false)}
         />

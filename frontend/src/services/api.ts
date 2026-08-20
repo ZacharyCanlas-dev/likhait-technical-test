@@ -2,7 +2,7 @@
  * API service for communicating with the backend
  */
 
-import { Expense, ExpenseFormData } from "../types";
+import { Category, Expense, ExpenseFormData } from "../types";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
@@ -34,15 +34,52 @@ export async function getExpenses(
 }
 
 /**
- * Fetch all categories
+ * Read the `errors` array the API returns on a failed request, falling back to
+ * `fallback` when the response carries no such array
  */
-export async function fetchCategories(): Promise<
-  Array<{ id: number; name: string }>
-> {
+async function readErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = await response.json();
+    return Array.isArray(body?.errors) && body.errors.length > 0
+      ? body.errors.join(", ")
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Fetch all categories, ordered by name
+ */
+export async function fetchCategories(): Promise<Category[]> {
   const response = await fetch(`${API_BASE_URL}/categories`);
   if (!response.ok) {
     throw new Error("Failed to fetch categories");
   }
+  return response.json();
+}
+
+/**
+ * Create a new category
+ */
+export async function createCategory(name: string): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}/categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ category: { name } }),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      await readErrorMessage(response, "Failed to create category"),
+    );
+  }
+
   return response.json();
 }
 

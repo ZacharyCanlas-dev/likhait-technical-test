@@ -24,19 +24,20 @@ RSpec.describe "Api::Categories", type: :request do
   end
 
   describe "POST /api/categories" do
-    def post_category(name)
-      post "/api/categories", params: { category: { name: name } }, as: :json
+    def post_category(name, icon: nil)
+      post "/api/categories", params: { category: { name: name, icon: icon } }, as: :json
     end
 
     context "with a valid category" do
       it "persists it and returns 201" do
-        expect { post_category("Groceries") }.to change(Category, :count).by(1)
+        expect { post_category("Groceries", icon: "🛒") }.to change(Category, :count).by(1)
 
         expect(response).to have_http_status(:created)
+        expect(Category.last.icon).to eq("🛒")
       end
 
       it "returns the category in the shape the index returns" do
-        post_category("Groceries")
+        post_category("Groceries", icon: "🛒")
         created = JSON.parse(response.body)
 
         get "/api/categories"
@@ -44,6 +45,13 @@ RSpec.describe "Api::Categories", type: :request do
 
         expect(created).to eq(listed)
         expect(created["id"]).to eq(Category.last.id)
+      end
+
+      it "accepts a category with no icon" do
+        post_category("Groceries")
+
+        expect(response).to have_http_status(:created)
+        expect(JSON.parse(response.body)["icon"]).to be_nil
       end
     end
 
@@ -62,6 +70,13 @@ RSpec.describe "Api::Categories", type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(JSON.parse(response.body)["errors"]).to include("Name has already been taken")
+      end
+
+      it "reports a rejected icon" do
+        expect { post_category("Groceries", icon: "not an icon") }.not_to change(Category, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(JSON.parse(response.body)["errors"]).to include("Icon must be a single character")
       end
     end
 

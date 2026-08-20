@@ -5,9 +5,9 @@
 import React, { useState } from "react";
 import { Category, Expense, ExpenseFormData } from "../types";
 import { formatCurrency, formatDate } from "../utils/expenseUtils";
-import { getCategoryEmoji } from "../constants/categoryEmojis";
 import { COLORS } from "../constants/colors";
 import { Button, Modal, Pagination } from "../vibes";
+import { CategoryAvatar } from "./CategoryAvatar";
 import { ExpenseForm } from "./ExpenseForm.tsx";
 import { deleteExpense, updateExpense } from "../services/api";
 
@@ -144,7 +144,14 @@ export function CalendarExpenseTable({
                     gap: "0.5rem",
                   }}
                 >
-                  <span>{getCategoryEmoji(expense.category)}</span>
+                  <CategoryAvatar
+                    name={expense.category}
+                    icon={
+                      categories.find(
+                        (category) => category.name === expense.category,
+                      )?.icon ?? null
+                    }
+                  />
                   <span>{expense.category}</span>
                 </span>
               </td>

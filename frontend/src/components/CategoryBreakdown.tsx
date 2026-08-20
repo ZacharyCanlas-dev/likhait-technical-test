@@ -1,9 +1,10 @@
 import React from "react";
-import { CATEGORY_EMOJIS } from "../constants/categoryEmojis";
+import { CategoryAvatar } from "./CategoryAvatar";
 import { COLORS } from "../constants/colors";
 
 interface CategoryData {
   category: string;
+  icon: string | null;
   amount: number;
   count: number;
 }
@@ -98,15 +99,9 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
   };
 
   const itemIconStyle: React.CSSProperties = {
-    fontSize: "32px",
-    width: "48px",
-    height: "48px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "white",
-    borderRadius: "10px",
-    boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
   };
 
   const itemDetailsStyle: React.CSSProperties = {
@@ -200,7 +195,11 @@ const CategoryBreakdown: React.FC<CategoryBreakdownProps> = ({
             >
               <div style={itemInfoStyle}>
                 <span style={itemIconStyle}>
-                  {CATEGORY_EMOJIS[category.category] || "📊"}
+                  <CategoryAvatar
+                    name={category.category}
+                    icon={category.icon}
+                    size={48}
+                  />
                 </span>
                 <div style={itemDetailsStyle}>
                   <div style={itemNameStyle}>{category.category}</div>

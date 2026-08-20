@@ -109,6 +109,8 @@ const HistoryPage: React.FC = () => {
       if (!acc[category]) {
         acc[category] = {
           category,
+          icon:
+            categories.find((entry) => entry.name === category)?.icon ?? null,
           amount: 0,
           count: 0,
         };
@@ -117,7 +119,10 @@ const HistoryPage: React.FC = () => {
       acc[category].count += 1;
       return acc;
     },
-    {} as Record<string, { category: string; amount: number; count: number }>,
+    {} as Record<
+      string,
+      { category: string; icon: string | null; amount: number; count: number }
+    >,
   );
 
   const categoryTotals = Object.values(categoryData).sort(

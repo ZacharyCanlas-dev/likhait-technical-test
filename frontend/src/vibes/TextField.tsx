@@ -2,7 +2,7 @@
  * Reusable TextField component
  */
 
-import React from "react";
+import React, { useId } from "react";
 import { COLORS } from "../constants/colors";
 
 interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -12,9 +12,13 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 function TextFieldBase(
-  { label, error, fullWidth = false, ...props }: TextFieldProps,
+  { label, error, fullWidth = false, id, ...props }: TextFieldProps,
   ref: React.ForwardedRef<HTMLInputElement>,
 ) {
+  const generatedId = useId();
+  const inputId = id ?? generatedId;
+  const errorId = `${inputId}-error`;
+
   const containerStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -47,9 +51,24 @@ function TextFieldBase(
 
   return (
     <div style={containerStyle}>
-      {label && <label style={labelStyle}>{label}</label>}
-      <input ref={ref} style={inputStyle} {...props} />
-      {error && <span style={errorStyle}>{error}</span>}
+      {label && (
+        <label htmlFor={inputId} style={labelStyle}>
+          {label}
+        </label>
+      )}
+      <input
+        id={inputId}
+        ref={ref}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        style={inputStyle}
+        {...props}
+      />
+      {error && (
+        <span id={errorId} role="alert" style={errorStyle}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }

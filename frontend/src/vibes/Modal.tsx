@@ -2,7 +2,7 @@
  * Reusable Modal component
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useId, useRef } from "react";
 import { COLORS } from "../constants/colors";
 
 interface ModalProps {
@@ -13,6 +13,15 @@ interface ModalProps {
   maxWidth?: string;
 }
 
+const FOCUSABLE = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
 export function Modal({
   isOpen,
   onClose,
@@ -20,21 +29,53 @@ export function Modal({
   children,
   maxWidth = "500px",
 }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+    if (!isOpen) return;
+
+    const dialog = dialogRef.current;
+    // Captured before focus moves into the dialog, and restored on close so a
+    // keyboard user returns to the control they opened it from.
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const focusableItems = () =>
+      Array.from(dialog?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []);
+
+    (focusableItems()[0] ?? dialog)?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
         onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialog) return;
+
+      const items = focusableItems();
+      if (items.length === 0) return;
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || !dialog.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
+    document.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "unset";
+      previouslyFocused?.focus();
     };
   }, [isOpen, onClose]);
 
@@ -89,12 +130,27 @@ export function Modal({
 
   return (
     <div style={overlayStyle} onClick={onClose}>
-      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
+        style={modalStyle}
+        onClick={(e) => e.stopPropagation()}
+      >
         {title && (
           <div style={headerStyle}>
-            <h2 style={titleStyle}>{title}</h2>
-            <button style={closeButtonStyle} onClick={onClose}>
-              ×
+            <h2 id={titleId} style={titleStyle}>
+              {title}
+            </h2>
+            <button
+              type="button"
+              aria-label="Close dialog"
+              style={closeButtonStyle}
+              onClick={onClose}
+            >
+              <span aria-hidden="true">&times;</span>
             </button>
           </div>
         )}

@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { ExpenseFormData } from "../types";
 import { isFutureDate, today } from "../utils/expenseUtils";
+import { ApiError } from "../services/api";
 
 const FUTURE_DATE_ERROR = "Expenses can only be dated today or earlier";
 
@@ -26,6 +27,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
   const [errors, setErrors] = useState<Partial<ExpenseFormData>>(() =>
     isFutureDate(formData.date) ? { date: FUTURE_DATE_ERROR } : {},
   );
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (field: keyof ExpenseFormData, value: string) => {
@@ -75,6 +77,8 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    setSubmitError(null);
+
     if (!validateForm()) {
       return;
     }
@@ -91,7 +95,11 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
       });
       setErrors({});
     } catch (error) {
-      console.error("Form submission error:", error);
+      setSubmitError(
+        error instanceof ApiError
+          ? error.message
+          : "The expense could not be saved. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -105,11 +113,13 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
       date: initialData?.date || today(),
     });
     setErrors({});
+    setSubmitError(null);
   };
 
   return {
     formData,
     errors,
+    submitError,
     isSubmitting,
     handleChange,
     handleSubmit,

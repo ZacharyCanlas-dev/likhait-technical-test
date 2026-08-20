@@ -7,6 +7,31 @@ import { Expense, ExpenseFormData } from "../types";
 const API_BASE_URL = "http://localhost:3000/api";
 
 /**
+ * A message the API itself produced, which callers can show to the user. A
+ * request that never reached the API rejects with something else.
+ */
+export class ApiError extends Error {}
+
+/**
+ * Read the messages the API sends with a rejected write, falling back to the
+ * given text when the response is not the { errors: [...] } envelope
+ */
+async function apiError(
+  response: Response,
+  fallback: string,
+): Promise<ApiError> {
+  try {
+    const body: { errors?: unknown } = await response.json();
+    if (Array.isArray(body?.errors) && body.errors.length > 0) {
+      return new ApiError(body.errors.join(". "));
+    }
+  } catch {
+    // A body that is not JSON leaves nothing to report but the fallback.
+  }
+  return new ApiError(fallback);
+}
+
+/**
  * Fetch all expenses
  */
 export async function fetchExpenses(): Promise<Expense[]> {
@@ -70,7 +95,7 @@ export async function createExpense(data: ExpenseFormData): Promise<Expense> {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create expense");
+    throw await apiError(response, "Failed to create expense");
   }
 
   return response.json();
@@ -92,7 +117,7 @@ export async function updateExpense(
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update expense");
+    throw await apiError(response, "Failed to update expense");
   }
 
   return response.json();

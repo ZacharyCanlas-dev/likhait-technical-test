@@ -6,6 +6,7 @@ import React from "react";
 import { ExpenseFormData } from "../types";
 import { EXPENSE_CATEGORIES } from "../constants/categories";
 import { TextField, SelectBox, Button } from "../vibes";
+import { COLORS } from "../constants/colors";
 import { useExpenseForm } from "../hooks/useExpenseForm";
 import { today } from "../utils/expenseUtils";
 
@@ -22,11 +23,17 @@ export function ExpenseForm({
   onCancel,
   submitLabel = "Add Expense",
 }: ExpenseFormProps) {
-  const { formData, errors, isSubmitting, handleChange, handleSubmit } =
-    useExpenseForm({
-      initialData,
-      onSubmit,
-    });
+  const {
+    formData,
+    errors,
+    submitError,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  } = useExpenseForm({
+    initialData,
+    onSubmit,
+  });
 
   const formStyle: React.CSSProperties = {
     display: "flex",
@@ -38,6 +45,15 @@ export function ExpenseForm({
     display: "flex",
     gap: "0.5rem",
     marginTop: "0.5rem",
+  };
+
+  const submitErrorStyle: React.CSSProperties = {
+    padding: "0.75rem",
+    borderRadius: "0.375rem",
+    border: `1px solid ${COLORS.red.re04}`,
+    backgroundColor: COLORS.red.re02,
+    color: COLORS.red.re07,
+    fontSize: "0.875rem",
   };
 
   const categoryOptions = EXPENSE_CATEGORIES.map((category) => ({
@@ -90,6 +106,12 @@ export function ExpenseForm({
         fullWidth
         required
       />
+
+      {submitError && (
+        <div style={submitErrorStyle} role="alert">
+          {submitError}
+        </div>
+      )}
 
       <div style={buttonGroupStyle}>
         <Button

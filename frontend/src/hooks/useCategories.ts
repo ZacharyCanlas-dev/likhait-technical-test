@@ -36,18 +36,21 @@ export function useCategories() {
     loadCategories();
   }, [loadCategories]);
 
-  const addCategory = useCallback(async (name: string): Promise<Category> => {
-    const created = await createCategory(name);
-    latestRequest.current += 1;
-    // Sorted because the index endpoint orders by name, and an unsorted insert
-    // would leave this session's additions last until the next reload.
-    setCategories((current) =>
-      [...current, created].sort((a, b) =>
-        compareCategoryNames(a.name, b.name),
-      ),
-    );
-    return created;
-  }, []);
+  const addCategory = useCallback(
+    async (name: string, icon: string | null): Promise<Category> => {
+      const created = await createCategory(name, icon);
+      latestRequest.current += 1;
+      // Sorted because the index endpoint orders by name, and an unsorted insert
+      // would leave this session's additions last until the next reload.
+      setCategories((current) =>
+        [...current, created].sort((a, b) =>
+          compareCategoryNames(a.name, b.name),
+        ),
+      );
+      return created;
+    },
+    [],
+  );
 
   return { categories, isLoading, error, addCategory, reload: loadCategories };
 }

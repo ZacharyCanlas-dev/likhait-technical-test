@@ -6,6 +6,17 @@ import { Category, Expense, ExpenseFormData } from "../types";
 
 const API_BASE_URL = "http://localhost:3000/api";
 
+/** An API failure that carried a status the caller needs to branch on */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 /**
  * Fetch all expenses
  */
@@ -65,18 +76,22 @@ export async function fetchCategories(): Promise<Category[]> {
 /**
  * Create a new category
  */
-export async function createCategory(name: string): Promise<Category> {
+export async function createCategory(
+  name: string,
+  icon: string | null,
+): Promise<Category> {
   const response = await fetch(`${API_BASE_URL}/categories`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ category: { name } }),
+    body: JSON.stringify({ category: { name, icon } }),
   });
 
   if (!response.ok) {
-    throw new Error(
+    throw new ApiError(
       await readErrorMessage(response, "Failed to create category"),
+      response.status,
     );
   }
 

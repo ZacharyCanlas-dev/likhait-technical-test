@@ -6,6 +6,7 @@ import { MonthNavigation } from "../components/MonthNavigation";
 import CategoryBreakdown from "../components/CategoryBreakdown";
 import { CalendarExpenseTable } from "../components/CalendarExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
+import { CategoryForm } from "../components/CategoryForm";
 import { useCategories } from "../hooks/useCategories";
 import { Modal, Button } from "../vibes";
 import { COLORS } from "../constants/colors";
@@ -27,10 +28,12 @@ const HistoryPage: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const {
     categories: categories,
     isLoading: categoriesLoading,
     error: categoriesError,
+    addCategory,
     reload: reloadCategories,
   } = useCategories();
 
@@ -156,6 +159,13 @@ const HistoryPage: React.FC = () => {
     gap: "24px",
   };
 
+  const headerActionsStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexShrink: 0,
+  };
+
   const bannerStyle = (isError: boolean): React.CSSProperties => ({
     display: "flex",
     alignItems: "center",
@@ -197,13 +207,21 @@ const HistoryPage: React.FC = () => {
             onYearChange={handleYearChange}
           />
         </div>
-        <Button
-          variant="primary"
-          onClick={() => setIsModalOpen(true)}
-          disabled={Boolean(blockedReason)}
-        >
-          Add Expense
-        </Button>
+        <div style={headerActionsStyle}>
+          <Button
+            variant="secondary"
+            onClick={() => setIsCategoryModalOpen(true)}
+          >
+            Add Category
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => setIsModalOpen(true)}
+            disabled={Boolean(blockedReason)}
+          >
+            Add Expense
+          </Button>
+        </div>
       </div>
 
       {blockedReason && (
@@ -256,6 +274,20 @@ const HistoryPage: React.FC = () => {
           categories={categories}
           onSubmit={handleAddExpense}
           onCancel={() => setIsModalOpen(false)}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        title="Add Category"
+      >
+        <CategoryForm
+          categories={categories}
+          isLoading={categoriesLoading}
+          loadError={categoriesError}
+          onSubmit={addCategory}
+          onDone={() => setIsCategoryModalOpen(false)}
         />
       </Modal>
     </div>

@@ -7,6 +7,56 @@ RSpec.describe Expense, type: :model do
     Expense.new(description: "Lunch", amount: 10.00, category: category, date: date)
   end
 
+  it "has a factory that builds a valid record" do
+    expect(build(:expense)).to be_valid
+  end
+
+  it "has a category factory that can be used twice in one example" do
+    expect { create(:category) && create(:category) }.to change(Category, :count).by(2)
+  end
+
+  describe "associations" do
+    it { is_expected.to belong_to(:category) }
+  end
+
+  describe "description" do
+    it "rejects an empty string" do
+      expense = build(:expense, description: "")
+
+      expect(expense).not_to be_valid
+      expect(expense.errors.full_messages).to include("Description can't be blank")
+    end
+
+    it "rejects whitespace only" do
+      expect(build(:expense, description: "   ")).not_to be_valid
+    end
+
+    it "accepts any non-blank text" do
+      expect(build(:expense, description: "Coffee")).to be_valid
+    end
+  end
+
+  describe "amount" do
+    it "rejects a negative amount" do
+      expense = build(:expense, amount: -100.00)
+
+      expect(expense).not_to be_valid
+      expect(expense.errors.full_messages).to include("Amount must be greater than 0")
+    end
+
+    it "rejects zero" do
+      expect(build(:expense, amount: 0)).not_to be_valid
+    end
+
+    it "rejects a missing amount rather than leaving it to the database" do
+      expect(build(:expense, amount: nil)).not_to be_valid
+    end
+
+    it "accepts a positive amount" do
+      expect(build(:expense, amount: 0.01)).to be_valid
+    end
+  end
+
   describe "date" do
     # The examples name dates relative to Date.current, and the validator reads it again
     # a moment later.

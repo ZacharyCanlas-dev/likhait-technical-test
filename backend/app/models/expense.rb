@@ -5,6 +5,9 @@ class Expense < ApplicationRecord
 
   belongs_to :category
 
+  validates :description, presence: true
+  validates :amount, numericality: { greater_than: 0 }
+
   validates :date,
     comparison: { less_than_or_equal_to: -> { Date.current + TIMEZONE_LEEWAY }, message: "can't be in the future" },
     allow_nil: true

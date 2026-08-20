@@ -90,11 +90,11 @@ RSpec.describe Expense, type: :model do
       end
     end
 
-    it "leaves a missing date to the database constraint" do
+    it "rejects a missing date before it reaches the database constraint" do
       expense = expense_dated(nil)
 
-      expect(expense).to be_valid
-      expect { expense.save! }.to raise_error(ActiveRecord::NotNullViolation)
+      expect(expense).not_to be_valid
+      expect(expense.errors.full_messages).to eq([ "Date can't be blank" ])
     end
   end
 end

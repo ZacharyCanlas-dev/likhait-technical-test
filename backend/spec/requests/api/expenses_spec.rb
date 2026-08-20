@@ -86,6 +86,23 @@ RSpec.describe "Api::Expenses", type: :request do
         expect(response).to have_http_status(:unprocessable_entity)
         expect(JSON.parse(response.body)["errors"]).to include("Description can't be blank")
       end
+
+      it "rejects a missing date instead of raising at the database" do
+        invalid_params = {
+          expense: {
+            description: "No date",
+            amount: 100.00,
+            category_id: food_category.id
+          }
+        }
+
+        expect {
+          post "/api/expenses", params: invalid_params, as: :json
+        }.not_to change(Expense, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(JSON.parse(response.body)["errors"]).to eq([ "Date can't be blank" ])
+      end
     end
 
     context "with a date in the future" do

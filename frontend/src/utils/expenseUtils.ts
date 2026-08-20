@@ -19,6 +19,18 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * Parse a YYYY-MM-DD string as a local date.
+ *
+ * `new Date("2026-08-21")` is date-only ISO 8601, which the spec parses as
+ * UTC midnight. Reading local components back off that value yields the
+ * previous day at any negative UTC offset.
+ */
+export function parseLocalDate(iso: string): Date {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+/**
  * Format date to YYYY-MM-DD
  */
 export function formatDate(date: Date): string {
@@ -42,7 +54,7 @@ export function groupExpensesByDay(expenses: Expense[]) {
   const grouped = new Map<number, Expense[]>();
 
   expenses.forEach((expense) => {
-    const day = new Date(expense.date).getDate();
+    const day = parseLocalDate(expense.date).getDate();
     const dayExpenses = grouped.get(day) || [];
     dayExpenses.push(expense);
     grouped.set(day, dayExpenses);

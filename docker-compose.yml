@@ -55,8 +55,7 @@ services:
     command: >
       sh -c "
         bundle install &&
-        rails db:migrate &&
-        rails db:seed &&
+        rails db:prepare &&
         rails server -b 0.0.0.0
       "
     networks:

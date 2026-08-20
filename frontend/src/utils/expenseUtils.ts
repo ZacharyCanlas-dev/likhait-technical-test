@@ -29,6 +29,21 @@ export function formatDate(date: Date): string {
 }
 
 /**
+ * Today in the user's own timezone, in the YYYY-MM-DD form date inputs use
+ */
+export function today(): string {
+  return formatDate(new Date());
+}
+
+/**
+ * Whether a YYYY-MM-DD date falls after today. ISO dates sort chronologically
+ * as strings, so no parsing back into a Date is needed.
+ */
+export function isFutureDate(date: string): boolean {
+  return date > today();
+}
+
+/**
  * Get days in month
  */
 export function getDaysInMonth(year: number, month: number): number {

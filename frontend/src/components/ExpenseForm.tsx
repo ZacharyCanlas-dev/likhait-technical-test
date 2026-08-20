@@ -6,7 +6,9 @@ import React from "react";
 import { ExpenseFormData } from "../types";
 import { EXPENSE_CATEGORIES } from "../constants/categories";
 import { TextField, SelectBox, Button } from "../vibes";
+import { COLORS } from "../constants/colors";
 import { useExpenseForm } from "../hooks/useExpenseForm";
+import { today } from "../utils/expenseUtils";
 
 interface ExpenseFormProps {
   initialData?: Partial<ExpenseFormData>;
@@ -21,11 +23,17 @@ export function ExpenseForm({
   onCancel,
   submitLabel = "Add Expense",
 }: ExpenseFormProps) {
-  const { formData, errors, isSubmitting, handleChange, handleSubmit } =
-    useExpenseForm({
-      initialData,
-      onSubmit,
-    });
+  const {
+    formData,
+    errors,
+    submitError,
+    isSubmitting,
+    handleChange,
+    handleSubmit,
+  } = useExpenseForm({
+    initialData,
+    onSubmit,
+  });
 
   const formStyle: React.CSSProperties = {
     display: "flex",
@@ -39,13 +47,23 @@ export function ExpenseForm({
     marginTop: "0.5rem",
   };
 
+  const submitErrorStyle: React.CSSProperties = {
+    padding: "0.75rem",
+    borderRadius: "0.375rem",
+    border: `1px solid ${COLORS.red.re04}`,
+    backgroundColor: COLORS.red.re02,
+    color: COLORS.red.re07,
+    fontSize: "0.875rem",
+  };
+
   const categoryOptions = EXPENSE_CATEGORIES.map((category) => ({
     value: category,
     label: category,
   }));
 
   return (
-    <form onSubmit={handleSubmit} style={formStyle}>
+    // Without noValidate the browser's own bubble preempts every message this form renders.
+    <form onSubmit={handleSubmit} style={formStyle} noValidate>
       <TextField
         label="Amount"
         type="number"
@@ -82,12 +100,19 @@ export function ExpenseForm({
       <TextField
         label="Date"
         type="date"
+        max={today()}
         value={formData.date}
         onChange={(e) => handleChange("date", e.target.value)}
         error={errors.date}
         fullWidth
         required
       />
+
+      {submitError && (
+        <div style={submitErrorStyle} role="alert">
+          {submitError}
+        </div>
+      )}
 
       <div style={buttonGroupStyle}>
         <Button

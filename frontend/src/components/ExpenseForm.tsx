@@ -41,7 +41,7 @@ export function ExpenseForm({
   };
 
   const categoryOptions = categories.map((category) => ({
-    value: category.name,
+    value: String(category.id),
     label: category.name,
   }));
 
@@ -73,9 +73,9 @@ export function ExpenseForm({
       <SelectBox
         label="Category"
         options={categoryOptions}
-        value={formData.category}
-        onChange={(e) => handleChange("category", e.target.value)}
-        error={errors.category}
+        value={formData.category_id}
+        onChange={(e) => handleChange("category_id", e.target.value)}
+        error={errors.category_id}
         fullWidth
         required
       />

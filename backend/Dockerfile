@@ -8,8 +8,10 @@ FROM ruby:$RUBY_VERSION-slim
 WORKDIR /rails
 
 # Install base packages
+# libyaml-dev and pkg-config are build inputs, not runtime tools: psych ships a
+# native extension and fails to compile without them.
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential ca-certificates default-mysql-client default-libmysqlclient-dev git && \
+    apt-get install --no-install-recommends -y build-essential ca-certificates default-mysql-client default-libmysqlclient-dev git libyaml-dev pkg-config && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install application gems

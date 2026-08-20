@@ -3,13 +3,7 @@ class Api::ExpensesController < ApplicationController
     expenses = Expense.includes(:category).ordered_by_date
 
     if params[:year].present? && params[:month].present?
-      year = params[:year].to_i
-      month = params[:month].to_i
-
-      start_date = Date.new(year, month, 1)
-      end_date = start_date.end_of_month
-
-      expenses = expenses.where(created_at: start_date.beginning_of_day..end_date.end_of_day)
+      expenses = expenses.in_month(params[:year].to_i, params[:month].to_i)
     end
 
     render json: expenses.map { |expense| format_expense(expense) }

@@ -8,6 +8,10 @@ RSpec.describe "Api::Expenses", type: :request do
     JSON.parse(response.body).map { |expense| expense["id"] }
   end
 
+  def expense_on(date)
+    Expense.create!(description: "Expense", amount: 10.00, category: food_category, date: date)
+  end
+
   describe "GET /api/expenses" do
     context "with expenses on different dates" do
       # Entered first but spent more recently, so insertion order and
@@ -48,6 +52,54 @@ RSpec.describe "Api::Expenses", type: :request do
         get "/api/expenses"
 
         expect(response_ids).to eq([ entered_second.id, entered_first.id ])
+      end
+    end
+
+    context "with a month filter" do
+      # Spent in February, entered in August: `date` and `created_at` disagree
+      # about which month this row belongs to, so the filter has to pick one.
+      let!(:backdated_expense) do
+        Expense.create!(description: "Backdated groceries", amount: 42.00, category: food_category,
+                        date: Date.new(2026, 2, 5), created_at: Time.utc(2026, 8, 20, 12, 0, 0))
+      end
+
+      # The range has to be inclusive at both ends, must not spill into the
+      # neighbouring months, and must not match February of a different year.
+      let!(:first_of_month) { expense_on(Date.new(2026, 2, 1)) }
+      let!(:last_of_month) { expense_on(Date.new(2026, 2, 28)) }
+      let!(:day_before_month) { expense_on(Date.new(2026, 1, 31)) }
+      let!(:day_after_month) { expense_on(Date.new(2026, 3, 1)) }
+      let!(:same_month_previous_year) { expense_on(Date.new(2025, 2, 5)) }
+
+      it "includes an expense in the month the money was spent" do
+        get "/api/expenses", params: { year: 2026, month: 2 }
+
+        expect(response).to have_http_status(:success)
+        expect(response_ids).to include(backdated_expense.id)
+      end
+
+      it "excludes an expense from the month it was merely entered in" do
+        get "/api/expenses", params: { year: 2026, month: 8 }
+
+        expect(response_ids).to be_empty
+      end
+
+      it "includes the first and last day of the requested month" do
+        get "/api/expenses", params: { year: 2026, month: 2 }
+
+        expect(response_ids).to include(first_of_month.id, last_of_month.id)
+      end
+
+      it "excludes the days on either side of the requested month" do
+        get "/api/expenses", params: { year: 2026, month: 2 }
+
+        expect(response_ids).not_to include(day_before_month.id, day_after_month.id)
+      end
+
+      it "excludes the same month of a different year" do
+        get "/api/expenses", params: { year: 2026, month: 2 }
+
+        expect(response_ids).not_to include(same_month_previous_year.id)
       end
     end
   end

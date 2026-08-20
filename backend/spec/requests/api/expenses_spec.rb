@@ -112,7 +112,7 @@ RSpec.describe "Api::Expenses", type: :request do
             description: "Team Lunch",
             amount: 150.50,
             category_id: food_category.id,
-            date: Date.today
+            date: Date.current
           }
         }
       end
@@ -136,7 +136,7 @@ RSpec.describe "Api::Expenses", type: :request do
             description: "Invalid expense",
             amount: -100.00,
             category_id: food_category.id,
-            date: Date.today
+            date: Date.current
           }
         }
 
@@ -153,7 +153,7 @@ RSpec.describe "Api::Expenses", type: :request do
             description: "",
             amount: 100.00,
             category_id: food_category.id,
-            date: Date.today
+            date: Date.current
           }
         }
 

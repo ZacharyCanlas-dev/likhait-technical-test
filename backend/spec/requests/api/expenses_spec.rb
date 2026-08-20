@@ -4,24 +4,51 @@ RSpec.describe "Api::Expenses", type: :request do
   let!(:food_category) { Category.create!(name: "Food") }
   let!(:transport_category) { Category.create!(name: "Transport") }
 
+  def response_ids
+    JSON.parse(response.body).map { |expense| expense["id"] }
+  end
+
   describe "GET /api/expenses" do
-  let!(:expense1) { Expense.create!(description: "Lunch", amount: 100.00, category: food_category, date: Date.today) }
-  let!(:expense2) { Expense.create!(description: "Taxi", amount: 50.00, category: transport_category, date: Date.today) }
+    context "with expenses on different dates" do
+      # Entered first but spent more recently, so insertion order and
+      # expense-date order disagree. Fixtures sharing a date could not
+      # distinguish them.
+      let!(:recent_expense) { Expense.create!(description: "Lunch", amount: 100.00, category: food_category, date: Date.new(2026, 2, 10)) }
+      let!(:older_expense) { Expense.create!(description: "Taxi", amount: 50.00, category: transport_category, date: Date.new(2026, 2, 5)) }
 
-    it "returns all expenses with category information" do
-      get "/api/expenses"
+      it "returns all expenses with category information" do
+        get "/api/expenses"
 
-      expect(response).to have_http_status(:success)
-      json = JSON.parse(response.body)
-      expect(json.length).to eq(2)
+        expect(response).to have_http_status(:success)
+        json = JSON.parse(response.body)
+        expect(json.length).to eq(2)
+        expect(json.map { |expense| expense["category"] }).to contain_exactly("Food", "Transport")
+      end
+
+      it "returns expenses in descending order by expense date" do
+        get "/api/expenses"
+
+        expect(response_ids).to eq([ recent_expense.id, older_expense.id ])
+      end
     end
 
-    it "returns expenses in descending order by created_at" do
-      get "/api/expenses"
+    context "with expenses sharing a date" do
+      # `created_at` is deliberately inverted against insertion order, so an
+      # ordering that tie-breaks on `created_at` instead of `id` fails here.
+      let!(:entered_first) do
+        Expense.create!(description: "Breakfast", amount: 10.00, category: food_category,
+                        date: Date.new(2026, 2, 5), created_at: Time.utc(2026, 6, 1))
+      end
+      let!(:entered_second) do
+        Expense.create!(description: "Dinner", amount: 20.00, category: food_category,
+                        date: Date.new(2026, 2, 5), created_at: Time.utc(2026, 1, 1))
+      end
 
-      json = JSON.parse(response.body)
-      expect(json.first["id"]).to eq(expense2.id)
-      expect(json.last["id"]).to eq(expense1.id)
+      it "breaks ties on a shared date by insertion order, newest first" do
+        get "/api/expenses"
+
+        expect(response_ids).to eq([ entered_second.id, entered_first.id ])
+      end
     end
   end
 

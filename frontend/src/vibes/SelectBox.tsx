@@ -2,7 +2,7 @@
  * Reusable SelectBox component
  */
 
-import React from "react";
+import React, { useId } from "react";
 import { COLORS } from "../constants/colors";
 
 interface SelectBoxProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -12,13 +12,14 @@ interface SelectBoxProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: Array<{ value: string; label: string }>;
 }
 
-export function SelectBox({
-  label,
-  error,
-  fullWidth = false,
-  options,
-  ...props
-}: SelectBoxProps) {
+function SelectBoxBase(
+  { label, error, fullWidth = false, options, id, ...props }: SelectBoxProps,
+  ref: React.ForwardedRef<HTMLSelectElement>,
+) {
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
+  const errorId = `${selectId}-error`;
+
   const containerStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -52,8 +53,19 @@ export function SelectBox({
 
   return (
     <div style={containerStyle}>
-      {label && <label style={labelStyle}>{label}</label>}
-      <select style={selectStyle} {...props}>
+      {label && (
+        <label htmlFor={selectId} style={labelStyle}>
+          {label}
+        </label>
+      )}
+      <select
+        id={selectId}
+        ref={ref}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
+        style={selectStyle}
+        {...props}
+      >
         <option value="">Select...</option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -61,7 +73,13 @@ export function SelectBox({
           </option>
         ))}
       </select>
-      {error && <span style={errorStyle}>{error}</span>}
+      {error && (
+        <span id={errorId} role="alert" style={errorStyle}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
+
+export const SelectBox = React.forwardRef(SelectBoxBase);

@@ -94,7 +94,7 @@ Expenses are displayed in a monthly calendar grid, making it easy to see spendin
 
 ### Category Organization
 
-All expenses are organized into 10 predefined categories (Food, Transport, Housing, Entertainment, Healthcare, Education, Shopping, Work, Utilities, Other), each with visual emoji indicators.
+All expenses are organized into 10 predefined categories (Food, Transportation, Shopping, Entertainment, Bills, Healthcare, Education, Travel, Personal, Other), each with visual emoji indicators.
 
 ### Real-Time Updates
 

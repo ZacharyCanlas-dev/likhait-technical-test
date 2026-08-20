@@ -8,7 +8,8 @@ RSpec.describe Expense, type: :model do
   end
 
   describe "date" do
-    # Every example reads Date.current, and so does the validator a moment later.
+    # The examples name dates relative to Date.current, and the validator reads it again
+    # a moment later.
     before { freeze_time }
 
     it "accepts a past date" do

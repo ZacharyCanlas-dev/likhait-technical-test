@@ -119,6 +119,13 @@ RSpec.describe "Api::Expenses", type: :request do
       Expense.create!(description: "Lunch", amount: 100.00, category: food_category, date: Date.current - 1)
     end
 
+    it "accepts a move to an earlier date" do
+      put "/api/expenses/#{expense.id}", params: { expense: { date: Date.current - 7 } }, as: :json
+
+      expect(response).to have_http_status(:success)
+      expect(expense.reload.date).to eq(Date.current - 7)
+    end
+
     it "rejects a move to a future date and leaves the expense as it was" do
       put "/api/expenses/#{expense.id}", params: { expense: { date: Date.current + 2 } }, as: :json
 

@@ -201,7 +201,7 @@ export function CalendarExpenseTable({
             initialData={{
               amount: editingExpense.amount.toString(),
               description: editingExpense.description,
-              category: editingExpense.category,
+              category_id: String(editingExpense.category_id),
               date: formatDate(new Date(editingExpense.date)),
             }}
             onSubmit={handleUpdate}

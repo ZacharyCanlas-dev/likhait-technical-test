@@ -99,26 +99,31 @@ export async function createCategory(
 }
 
 /**
+ * Build the request body for a create or update.
+ *
+ * Every key here must be permitted by expense_params on the server. Strong
+ * parameters discards anything else without reporting it, so a request built
+ * from the form object directly succeeds while silently dropping fields.
+ */
+function expenseParams(data: ExpenseFormData) {
+  return {
+    description: data.description,
+    amount: data.amount,
+    category_id: data.category_id,
+    date: data.date,
+  };
+}
+
+/**
  * Create a new expense
  */
 export async function createExpense(data: ExpenseFormData): Promise<Expense> {
-  // Convert category name to category_id
-  const categories = await fetchCategories();
-  const category = categories.find((c) => c.name === data.category);
-
-  const expenseData = {
-    description: data.description,
-    amount: data.amount,
-    category_id: category?.id,
-    date: data.date,
-  };
-
   const response = await fetch(`${API_BASE_URL}/expenses`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ expense: expenseData }),
+    body: JSON.stringify({ expense: expenseParams(data) }),
   });
 
   if (!response.ok) {
@@ -133,14 +138,14 @@ export async function createExpense(data: ExpenseFormData): Promise<Expense> {
  */
 export async function updateExpense(
   id: number,
-  data: Partial<ExpenseFormData>,
+  data: ExpenseFormData,
 ): Promise<Expense> {
   const response = await fetch(`${API_BASE_URL}/expenses/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ expense: data }),
+    body: JSON.stringify({ expense: expenseParams(data) }),
   });
 
   if (!response.ok) {

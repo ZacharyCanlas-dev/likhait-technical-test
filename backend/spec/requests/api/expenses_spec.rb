@@ -86,4 +86,53 @@ RSpec.describe "Api::Expenses", type: :request do
       end
     end
   end
+
+  describe "PUT /api/expenses/:id" do
+    let!(:expense) do
+      Expense.create!(description: "Lunch", amount: 100.00, category: food_category, date: Date.new(2026, 2, 5))
+    end
+
+    def put_expense(params)
+      put "/api/expenses/#{expense.id}", params: { expense: params }, as: :json
+    end
+
+    it "changes the category" do
+      put_expense(category_id: transport_category.id)
+
+      expect(response).to have_http_status(:success)
+      expect(expense.reload.category).to eq(transport_category)
+    end
+
+    it "changes the description, amount and date" do
+      put_expense(description: "Dinner", amount: 42.50, date: "2026-02-09")
+
+      expect(response).to have_http_status(:success)
+      expect(expense.reload).to have_attributes(
+        description: "Dinner",
+        amount: 42.50,
+        date: Date.new(2026, 2, 9)
+      )
+    end
+
+    it "rejects a category that does not exist" do
+      put_expense(category_id: 0)
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(expense.reload.category).to eq(food_category)
+    end
+  end
+
+  describe "the expense payload" do
+    let!(:expense) do
+      Expense.create!(description: "Lunch", amount: 100.00, category: food_category, date: Date.new(2026, 2, 5))
+    end
+
+    it "carries category_id alongside the display name" do
+      get "/api/expenses"
+
+      json = JSON.parse(response.body).first
+      expect(json["category"]).to eq("Food")
+      expect(json["category_id"]).to eq(food_category.id)
+    end
+  end
 end

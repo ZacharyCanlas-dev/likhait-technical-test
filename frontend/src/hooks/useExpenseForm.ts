@@ -4,7 +4,9 @@
 
 import { useState } from "react";
 import { ExpenseFormData } from "../types";
-import { formatDate } from "../utils/expenseUtils";
+import { isFutureDate, today } from "../utils/expenseUtils";
+
+const FUTURE_DATE_ERROR = "Expenses can only be dated today or earlier";
 
 interface UseExpenseFormProps {
   initialData?: Partial<ExpenseFormData>;
@@ -16,14 +18,29 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
     amount: initialData?.amount || "",
     description: initialData?.description || "",
     category: initialData?.category || "",
-    date: initialData?.date || formatDate(new Date()),
+    date: initialData?.date || today(),
   });
 
-  const [errors, setErrors] = useState<Partial<ExpenseFormData>>({});
+  // An expense stored before this rule existed opens the edit form already in breach,
+  // and nothing else would say so until the user pressed Update.
+  const [errors, setErrors] = useState<Partial<ExpenseFormData>>(() =>
+    isFutureDate(formData.date) ? { date: FUTURE_DATE_ERROR } : {},
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (field: keyof ExpenseFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+
+    // A date input only ever emits a complete date, so it can be judged as it
+    // changes. The others would fault a value the user is still typing.
+    if (field === "date") {
+      setErrors((prev) => ({
+        ...prev,
+        date: isFutureDate(value) ? FUTURE_DATE_ERROR : undefined,
+      }));
+      return;
+    }
+
     // Clear error for this field when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -47,6 +64,8 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
 
     if (!formData.date) {
       newErrors.date = "Date is required";
+    } else if (isFutureDate(formData.date)) {
+      newErrors.date = FUTURE_DATE_ERROR;
     }
 
     setErrors(newErrors);
@@ -68,7 +87,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
         amount: "",
         description: "",
         category: "",
-        date: formatDate(new Date()),
+        date: today(),
       });
       setErrors({});
     } catch (error) {
@@ -83,7 +102,7 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
       amount: initialData?.amount || "",
       description: initialData?.description || "",
       category: initialData?.category || "",
-      date: initialData?.date || formatDate(new Date()),
+      date: initialData?.date || today(),
     });
     setErrors({});
   };

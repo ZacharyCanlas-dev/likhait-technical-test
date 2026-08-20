@@ -11,12 +11,10 @@ interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
-export function TextField({
-  label,
-  error,
-  fullWidth = false,
-  ...props
-}: TextFieldProps) {
+function TextFieldBase(
+  { label, error, fullWidth = false, ...props }: TextFieldProps,
+  ref: React.ForwardedRef<HTMLInputElement>,
+) {
   const containerStyle: React.CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -50,8 +48,10 @@ export function TextField({
   return (
     <div style={containerStyle}>
       {label && <label style={labelStyle}>{label}</label>}
-      <input style={inputStyle} {...props} />
+      <input ref={ref} style={inputStyle} {...props} />
       {error && <span style={errorStyle}>{error}</span>}
     </div>
   );
 }
+
+export const TextField = React.forwardRef(TextFieldBase);

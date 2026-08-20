@@ -2,9 +2,20 @@
  * API service for communicating with the backend
  */
 
-import { Expense, ExpenseFormData } from "../types";
+import { Category, Expense, ExpenseFormData } from "../types";
 
 const API_BASE_URL = "http://localhost:3000/api";
+
+/** An API failure that carried a status the caller needs to branch on */
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
 
 /**
  * Fetch all expenses
@@ -34,15 +45,56 @@ export async function getExpenses(
 }
 
 /**
- * Fetch all categories
+ * Read the `errors` array the API returns on a failed request, falling back to
+ * `fallback` when the response carries no such array
  */
-export async function fetchCategories(): Promise<
-  Array<{ id: number; name: string }>
-> {
+async function readErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = await response.json();
+    return Array.isArray(body?.errors) && body.errors.length > 0
+      ? body.errors.join(", ")
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Fetch all categories, ordered by name
+ */
+export async function fetchCategories(): Promise<Category[]> {
   const response = await fetch(`${API_BASE_URL}/categories`);
   if (!response.ok) {
     throw new Error("Failed to fetch categories");
   }
+  return response.json();
+}
+
+/**
+ * Create a new category
+ */
+export async function createCategory(
+  name: string,
+  icon: string | null,
+): Promise<Category> {
+  const response = await fetch(`${API_BASE_URL}/categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ category: { name, icon } }),
+  });
+
+  if (!response.ok) {
+    throw new ApiError(
+      await readErrorMessage(response, "Failed to create category"),
+      response.status,
+    );
+  }
+
   return response.json();
 }
 

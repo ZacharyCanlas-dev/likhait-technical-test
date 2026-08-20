@@ -2,6 +2,12 @@
  * Type definitions for the Expense Tracking System
  */
 
+export interface Category {
+  id: number;
+  name: string;
+  icon: string | null;
+}
+
 export interface Expense {
   id: number;
   amount: number;

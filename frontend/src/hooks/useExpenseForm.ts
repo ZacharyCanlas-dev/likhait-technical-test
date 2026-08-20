@@ -22,8 +22,8 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
     date: initialData?.date || today(),
   });
 
-  // An expense stored before this rule existed opens the edit form already in breach,
-  // and nothing else would say so until the user pressed Update.
+  // An expense already stored with a future date opens the edit form in breach, and
+  // nothing would say so until the user pressed Update.
   const [errors, setErrors] = useState<Partial<ExpenseFormData>>(() =>
     isFutureDate(formData.date) ? { date: FUTURE_DATE_ERROR } : {},
   );
@@ -32,9 +32,10 @@ export function useExpenseForm({ initialData, onSubmit }: UseExpenseFormProps) {
 
   const handleChange = (field: keyof ExpenseFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setSubmitError(null);
 
-    // A date input only ever emits a complete date, so it can be judged as it
-    // changes. The others would fault a value the user is still typing.
+    // A date input emits either a complete date or nothing, so it can be judged as
+    // it changes. The others would fault a value the user is still typing.
     if (field === "date") {
       setErrors((prev) => ({
         ...prev,

@@ -62,6 +62,7 @@ export function ExpenseForm({
   }));
 
   return (
+    // Without noValidate the browser's own bubble preempts every message this form renders.
     <form onSubmit={handleSubmit} style={formStyle} noValidate>
       <TextField
         label="Amount"

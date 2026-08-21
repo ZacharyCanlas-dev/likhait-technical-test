@@ -23,8 +23,8 @@ prediction differed from the measurement, the measurement is recorded.
 
 ## What the pull requests proved that reasoning had not
 
-Two claims in these notes were written from reading the code and were later contradicted, or
-sharpened, by executing it. Both corrections stand where the original claim was.
+Three claims in these notes were written from reading the code and were later contradicted, or
+sharpened, by executing it. Each correction stands where the original claim was.
 
 **CI now runs.** The workflow sat at `backend/.github/workflows/ci.yml`, which GitHub does not read,
 so nothing had ever executed here. Relocating it needed a `workflow` credential scope only the
@@ -194,7 +194,7 @@ resolution this project already has, so it arrives as one devDependency and a `t
 than a second toolchain. Cypress needs Rails on `:3000` and a seeded MySQL for any spec worth
 writing — which is exactly the infrastructure that did not work from a clean checkout until #5, and a
 test layer that runs only once infrastructure is healthy is the first thing to be skipped. And CI has
-never executed against this repository at all; adding a browser binary and two services before a
+only just started running here, in #13; adding a browser binary and two services before a
 suite that runs in one process on `npm test` inverts the order those should arrive in.
 
 The argument against, stated because it is real: an end-to-end tool would have caught #8 the way a

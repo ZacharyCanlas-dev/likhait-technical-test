@@ -65,7 +65,7 @@ RSpec.describe "Api::Expenses", type: :request do
           post "/api/expenses", params: invalid_params, as: :json
         }.not_to change(Expense, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"]).to include("Amount must be greater than 0")
       end
 
@@ -83,7 +83,7 @@ RSpec.describe "Api::Expenses", type: :request do
           post "/api/expenses", params: invalid_params, as: :json
         }.not_to change(Expense, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"]).to include("Description can't be blank")
       end
 
@@ -100,7 +100,7 @@ RSpec.describe "Api::Expenses", type: :request do
           post "/api/expenses", params: invalid_params, as: :json
         }.not_to change(Expense, :count)
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
         expect(JSON.parse(response.body)["errors"]).to eq([ "Date can't be blank" ])
       end
     end

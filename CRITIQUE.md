@@ -4,13 +4,14 @@ Notes from a full pass over this repository, written against README §5. Finding
 fixing became pull requests; the rest are here, with the mechanism in each case rather than the
 symptom.
 
-Every claim in this document was reproduced against the running application; where a prediction
-differed from the measurement, the measurement is recorded.
+Every claim about this codebase's behaviour was reproduced against the running application; where a
+prediction differed from the measurement, the measurement is recorded.
 
 ## What became a pull request
 
 | # | Finding | Kind |
 |---|---|---|
+| 1 | A pre-existing spec asserted `amount` as the string `"150.5"` while `format_expense` emits a JSON number, so the suite shipped one failing example | Tests |
 | 5 | The repository cannot start from a clean checkout — five independent defects between `git clone` and a served request | Infrastructure |
 | 6 | Expense dates render, and save, one day early at any negative UTC offset | Correctness — data loss |
 | 7 | CORS allowed every origin every method on every path | Security |
@@ -36,10 +37,8 @@ push time unless the credential carries the `workflow` scope. The remedy is one 
 gh auth refresh -s workflow
 ```
 
-CI is now the only blocked item. An earlier draft of these notes listed a second one — PR #5's
-integrated `docker compose up` had never been executed, because the daemon would have bound `:3306`
-against a MySQL instance already serving the host. That has since been run in both directions from
-clean clones, and the full output is in #5: on `main` the build fails at `yaml.h not found` while
+CI is now the only blocked item. PR #5's integrated `docker compose up` has been run in both
+directions from clean clones, and the full output is in #5: on `main` the build fails at `yaml.h not found` while
 installing psych, which is a Dockerfile layer, so no container is ever created; on the branch the
 stack comes up, `GET /api/expenses` answers 200 over 4,314 seeded records, and Vite serves on
 `:5173`. The measurement also settled a detail reasoning had left open — a clean clone of `main`
@@ -71,7 +70,7 @@ coupling is named rather than removed.
 **The category list had four sources of truth.** `db/seeds.rb` (ten), a duplicated constant in the
 client (the same ten), an emoji map (nine — `Personal` was missing), and `db/init.sql` (five
 entirely different ones). `README.md` listed a fifth set. Three of the four are collapsed by the
-category-management work and PR #5; this is recorded because it is the root cause those two share.
+category-management work, #3, and PR #5; this is recorded because it is the root cause those two share.
 
 **There is no frontend test infrastructure at all.** `frontend/package.json` has three scripts and
 no vitest, jest, testing-library or playwright. `npm run build` — which runs `tsc` first — is the
@@ -121,16 +120,20 @@ line in this repository to correct. Use `db:prepare`, or `db:drop db:create db:s
 `currentPage` when `expenses` changes. Sit on page 3, switch to a month with ten or fewer expenses:
 the slice is empty so the table body renders blank, and `Pagination` returns `null` at
 `totalPages <= 1`, so the controls that would let you navigate back are gone. The only escape is
-changing month again or reloading. The fix is a two-line `useEffect`; it is here rather than in a
-pull request because it has no narrative worth a reviewer's time.
+changing month again or reloading. The fix is a two-line `useEffect`, and it is exactly the kind of
+state-reset bug a component test pins and review misses; it goes with the frontend test
+infrastructure recommended below rather than landing untested.
 
-**Failures are invisible, in three different ways.** A failed create or update is `console.error`'d
-and nothing else, so the modal stays open with no message. A failed delete calls `alert()`. Three
-non-answers to one problem. Introducing an error surface is a design decision this codebase has not
-made anywhere else, which is why it is a note.
+**Failures were invisible, in three different ways.** A failed create or update was `console.error`'d
+and nothing else, so the modal stayed open with no message; the future-date work, #4, gives both
+writes an error surface rendered with `role="alert"`. A failed delete still calls `alert()`. What
+remains is that the application has no single answer to reporting a failed write, which is a design
+decision rather than a defect.
 
-**`:unprocessable_entity` is deprecated in Rack 3.1** and both controllers use it. Every spec run
-now prints the warning. `:unprocessable_content` replaces it.
+**`:unprocessable_entity` is deprecated in Rack 3.1** and both controllers use it. The warning
+surfaces through rspec-rails' `have_http_status` matcher rather than the controller's render, so it
+appears on the branches whose specs assert a 422 and not on `main`, which asserts none. The specs
+have moved to `:unprocessable_content`; the controllers have not.
 
 ## Optimization
 
@@ -163,7 +166,7 @@ healthcheck, and `frontend` depends on it without a condition.
 
 ## Remaining work
 
-**Focus the first invalid control after a failed submit.** The future-date work sets `noValidate` on
+**Focus the first invalid control after a failed submit.** The future-date work, #4, sets `noValidate` on
 the expense form, which turns off the browser's own behaviour of moving focus to the first invalid
 control. PR #10 ships the capability that restores it — an id, the aria wiring and a forwarded ref on
 both `TextField` and `SelectBox` — but the wiring that consumes it lives in `ExpenseForm`, which two

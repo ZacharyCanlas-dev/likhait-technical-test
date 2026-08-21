@@ -76,7 +76,8 @@ category-management work and PR #5; this is recorded because it is the root caus
 no vitest, jest, testing-library or playwright. `npm run build` — which runs `tsc` first — is the
 only automated check that has ever existed on client code. Two of the defects found in this review
 were client-side and would each have been caught by a single unit test: the timezone parsing in #6
-and the payload key in #8. Standing up Vitest is the highest-value follow-up in these notes.
+and the payload key in #8. Vitest and Cypress were both considered as the remedy; the comparison and
+the reasoning behind choosing Vitest are under *Remaining work* below.
 
 ## Security
 
@@ -168,8 +169,29 @@ both `TextField` and `SelectBox` — but the wiring that consumes it lives in `E
 unmerged branches modify: one adds the `noValidate` this responds to, the other renames the field the
 form keys on. It lands cleanly once both merge, and not before.
 
-**Stand up Vitest.** See *no frontend test infrastructure* above. This is the recommendation with the
-best ratio of effort to defects prevented.
+**Stand up Vitest rather than Cypress.** See *no frontend test infrastructure* above. Both were
+considered, and the deciding factor is that neither client-side defect this review found is a flow.
+#6 is a pure function — a `YYYY-MM-DD` string in, a `Date` out — and #8 is the shape of a request
+body. A test that never renders a page catches both. Cypress earns its cost on assembled journeys
+through a real browser; paying that to catch a date-parsing bug is the wrong instrument.
+
+Three practical points reinforce it. Vitest reuses the Vite config, transform pipeline and TypeScript
+resolution this project already has, so it arrives as one devDependency and a `test` script rather
+than a second toolchain. Cypress needs Rails on `:3000` and a seeded MySQL for any spec worth
+writing — which is exactly the infrastructure that did not work from a clean checkout until #5, and a
+test layer that runs only once infrastructure is healthy is the first thing to be skipped. And CI has
+never executed against this repository at all; adding a browser binary and two services before a
+suite that runs in one process on `npm test` inverts the order those should arrive in.
+
+The argument against, stated because it is real: an end-to-end tool would have caught #8 the way a
+user did — a save that reported success and changed nothing — whereas a unit test catches it only if
+someone thinks to assert the request body. That advantage does not carry the cost here. If an
+end-to-end layer is added later, Playwright fits this repository better than Cypress: it drives the
+same flows, needs no separate dashboard tier, and is already present in the development environment.
+
+Paired with `@testing-library/react`, Vitest also reaches the component behaviour PR #10 adds — the
+focus trap, the restored focus, the label-to-input association — none of which needs a browser driver
+to assert. That is the best ratio of effort to defects prevented in these notes.
 
 **A dependency pass.** `faker` and `database_cleaner-active_record` are unused; `react-router-dom` is
 unused; Rails is out of support. Grouping them is better than removing one at a time, because each

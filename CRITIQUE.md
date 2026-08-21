@@ -19,30 +19,40 @@ prediction differed from the measurement, the measurement is recorded.
 | 9 | `GET /api/expenses` returned 500 for an impossible month, returned every row unbounded, and had no index for its ordering | Robustness, performance |
 | 10 | No component in `vibes/` had accessibility support, so every modal and field in the app inherited the same defects | Architectural |
 | 11 | The test harness was present in the `Gemfile` and configured nowhere; `Expense` validated almost nothing | Code quality |
+| 13 | CI had never executed: the workflow was one directory below where GitHub reads it, ran Minitest against a suite that does not exist, and its security scan exited on its own version before scanning | Infrastructure |
 
-## Blocked, not skipped
+## What the pull requests proved that reasoning had not
 
-**CI has never run on this repository, and relocating it needs one command only the repository owner
-can issue.** The workflow lives at `backend/.github/workflows/ci.yml`. GitHub reads
-`.github/workflows/` at the repository root only, so no job has executed against any commit or pull
-request here. Moving it also requires three corrections: the test step is
-`bin/rails db:test:prepare test test:system` — Minitest, while this project uses RSpec and has no
-`test/` directory; `DATABASE_URL` names no database; and no job sets `working-directory: backend`,
-where the application actually lives.
+Two claims in these notes were written from reading the code and were later contradicted, or
+sharpened, by executing it. Both corrections stand where the original claim was.
 
-The move itself is blocked on a token scope. A commit touching `.github/workflows/` is rejected at
-push time unless the credential carries the `workflow` scope. The remedy is one command:
+**CI now runs.** The workflow sat at `backend/.github/workflows/ci.yml`, which GitHub does not read,
+so nothing had ever executed here. Relocating it needed a `workflow` credential scope only the
+repository owner can grant; that has been done and the move is #13. The relocation alone was not
+enough — the test step invoked Minitest against a `test/` directory that does not exist, no job
+accounted for the application living in `backend/`, and `DATABASE_URL` named no database while
+`database.yml` reads `DATABASE_HOST` and friends.
 
-```bash
-gh auth refresh -s workflow
-```
+The first run is the useful part. Based on `main`, all four jobs failed, and not on anything in the
+workflow: the Ruby jobs on `Your bundle only supports platforms ["arm64-darwin"]`, and the frontend
+on `Cannot find module @rollup/rollup-linux-x64-gnu`, citing npm/cli#4828 by number. Those are the
+two lockfile defects #5 fixes, reproduced independently on GitHub's runners. The strongest evidence
+for that PR came from a machine that had never seen it.
 
-CI is now the only blocked item. PR #5's integrated `docker compose up` has been run in both
-directions from clean clones, and the full output is in #5: on `main` the build fails at `yaml.h not found` while
-installing psych, which is a Dockerfile layer, so no container is ever created; on the branch the
-stack comes up, `GET /api/expenses` answers 200 over 4,314 seeded records, and Vite serves on
-`:5173`. The measurement also settled a detail reasoning had left open — a clean clone of `main`
-never reaches the `rollup-linux-x64-musl` defect at all, because the backend image fails first.
+**The security scan had stopped scanning.** `bin/brakeman` is a generated binstub that prepends
+`--ensure-latest`, so once the newest published Brakeman moved past the pinned 7.1.1 the command
+exited 5 with one line about its own version and never examined the application. A gate that reports
+nothing about the code it guards is worse than an absent one, because the job name still reads
+`scan_ruby`. #13 calls the scanner directly. The one warning it then surfaces — Rails 7.2.3 out of
+support — is recorded in `backend/config/brakeman.ignore` with its reason, so it stays visible as an
+ignored warning while every other check still fails the build.
+
+**PR #5's integrated `docker compose up`** has been run in both directions from clean clones, and the
+full output is in #5: on `main` the build fails at `yaml.h not found` while installing psych, which
+is a Dockerfile layer, so no container is ever created; on the branch the stack comes up,
+`GET /api/expenses` answers 200 over 4,314 seeded records, and Vite serves on `:5173`. That
+measurement also settled a detail reasoning had left open — a clean clone of `main` never reaches the
+`rollup-linux-x64-musl` defect at all, because the backend image fails first.
 
 ## Architectural flaws
 

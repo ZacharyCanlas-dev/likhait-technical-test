@@ -23,8 +23,11 @@ jobs:
           bundler-cache: true
           working-directory: backend
 
+      # bin/brakeman prepends --ensure-latest, which exits 5 whenever the pinned gem
+      # trails the newest published one -- before scanning anything. Call the scanner
+      # directly so this job fails on findings rather than on release timing.
       - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
+        run: bundle exec brakeman --no-pager
 
   lint:
     runs-on: ubuntu-latest

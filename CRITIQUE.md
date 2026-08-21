@@ -36,13 +36,14 @@ push time unless the credential carries the `workflow` scope. The remedy is one 
 gh auth refresh -s workflow
 ```
 
-**One claim in the pull requests rests on reasoning rather than execution.** PR #5 fixes five
-defects that prevent `docker compose up` from reaching a running application. Each was reproduced
-before being fixed, and everything verifiable without the Docker daemon has been verified — but the
-integrated boot has not been run end to end, because starting the daemon would bind `:3306` against
-a MySQL instance already serving the host. This is stated in #5 and repeated here so it is visible
-in the summary as well as in the diff. Running `docker compose up` from a clean clone of that branch
-is the one outstanding verification.
+CI is now the only blocked item. An earlier draft of these notes listed a second one — PR #5's
+integrated `docker compose up` had never been executed, because the daemon would have bound `:3306`
+against a MySQL instance already serving the host. That has since been run in both directions from
+clean clones, and the full output is in #5: on `main` the build fails at `yaml.h not found` while
+installing psych, which is a Dockerfile layer, so no container is ever created; on the branch the
+stack comes up, `GET /api/expenses` answers 200 over 4,314 seeded records, and Vite serves on
+`:5173`. The measurement also settled a detail reasoning had left open — a clean clone of `main`
+never reaches the `rollup-linux-x64-musl` defect at all, because the backend image fails first.
 
 ## Architectural flaws
 
